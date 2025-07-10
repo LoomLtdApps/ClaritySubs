@@ -1,185 +1,293 @@
 //
 //  ContentView.swift
-//  VisionOSMenuBar
+//  SystemTray
 //
-//  Created by Balaji Venkatesh on 14/03/25.
+//  Created by Balaji Venkatesh on 04/03/25.
 //
 
 import SwiftUI
 
-extension ColorScheme {
-    var currentColor: Color {
-        switch self {
-        case .light:
-            return .white
-        case .dark:
-            return .black
-        default: return .clear
-        }
-    }
+enum CurrentView {
+    case actions
+    case periods
+    case keypad
 }
 
 struct ContentView: View {
     /// View Properties
-    @State private var isExpanded: Bool = false
-    @State private var menuPosition: CGRect = .zero
-    @Environment(\.colorScheme) private var colorScheme
+    @State private var show: Bool = false
     var body: some View {
-        VStack(spacing: 10) {
-            HeaderView()
-            
-            /// Dummy Content View
-            DummyContentView()
-            
-            Spacer(minLength: 0)
-        }
-        .background(.BG)
-        .overlay(alignment: .topLeading) {
-            ZStack(alignment: .topLeading) {
-                Rectangle()
-                    .foregroundStyle(.clear)
-                    .contentShape(.rect)
-                    .onTapGesture {
-                        withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
-                            isExpanded = false
-                        }
-                    }
-                    .allowsHitTesting(isExpanded)
-                
-                ZStack {
-                    if isExpanded {
-                        VisionOSStyleView {
-                            MenuBarControls()
-                                .foregroundStyle(.black)
-                                .frame(width: 220, height: 270)
-                        }
-                        .transition(.blurReplace)
-                    }
+        NavigationStack {
+            List {
+                Section("Usage") {
+                    Text(
+                       """
+                       **.systemTrayView(show: $show) {**
+                          /// ANIMATED VIEW
+                       **}**
+                       """
+                    )
+                    .monospaced()
                 }
-                .offset(x: menuPosition.minX - 220 + menuPosition.width, y: menuPosition.maxY + 10)
+                
+                Button("Show Tray Sheet") {
+                    show.toggle()
+                }
             }
-            .ignoresSafeArea()
+            .navigationTitle("Tray")
         }
-    }
-    
-    /// Header View
-    @ViewBuilder
-    func HeaderView() -> some View {
-        HStack {
-            Text("Notes")
-                .font(.largeTitle.bold())
-            
-            Spacer(minLength: 0)
-            
-            
-            ForEach(["square.and.pencil", "square.and.arrow.up.fill", "ellipsis"], id: \.self) { image in
-                 Button {
-                     if image == "ellipsis" {
-                         withAnimation(.smooth) {
-                             self.isExpanded.toggle()
-                         }
-                     }
-                 } label: {
-                     let isExpanded = image == "ellipsis" ? isExpanded : false
-                     
-                     Image(systemName: image)
-                         .font(.title3)
-                         .foregroundStyle(isExpanded ? colorScheme.currentColor : Color.primary)
-                         .frame(width: 42, height: 42)
-                         .background {
-                             ZStack {
-                                 Rectangle()
-                                     .fill(.ultraThinMaterial)
-                                 
-                                 Rectangle()
-                                     .fill(Color.primary.opacity(isExpanded ? 1 : 0.03))
-                             }
-                             .clipShape(.circle)
-                         }
-                 }
-                 .onGeometryChange(for: CGRect.self) {
-                     $0.frame(in: .global)
-                 } action: { newValue in
-                     if image == "ellipsis" {
-                         menuPosition = newValue
-                     }
-                 }
-             }
-        }
-        .padding(15)
-    }
-    
-    @ViewBuilder
-    func DummyContentView() -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            GeometryReader { geometry in
-                Image(.castle)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
-                    .clipped()
-            }
-            .frame(height: 320)
-            
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Neuschwanstein Castle")
-                    .font(.title.bold())
-            }
-            .padding(15)
+        .systemTrayView($show) {
+            TrayView()
         }
     }
 }
 
-struct MenuBarControls: View {
+struct TrayView: View {
+    @State private var currentView: CurrentView = .actions
+    @State private var selectedAction: Action?
+    @State private var selectedPeriod: Period?
+    @State private var duration: String = ""
+    @Environment(\.dismiss) var dismiss
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 15) {
-                ForEach(["document.viewfinder", "pin.fill", "lock.fill"], id: \.self) { image in
-                    Button {
-                        
-                    } label: {
-                        Image(systemName: image)
-                            .font(.title3)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                    }
+        VStack(spacing: 20) {
+            ZStack {
+                switch currentView {
+                case .actions: View1()
+                        .transition(
+                            .blurReplace(.upUp)
+                        )
+                case .periods: View2()
+                        .transition(
+                            .blurReplace(.downUp)
+                        )
+                case .keypad: View3()
+                        .transition(.blurReplace(.upUp))
                 }
             }
+            .compositingGroup()
             
-            /// Custom Divider
-            Rectangle()
-                .fill(.black.opacity(0.1))
-                .frame(height: 1)
-            
-            /// Custom Buttons
-            CustomButton(title: "Find in Note", image: "magnifyingglass")
-            
-            CustomButton(title: "Move Note", image: "folder")
-            
-            CustomButton(title: "Lines & Grids", image: "squareshape.split.3x3")
-            
-            CustomButton(title: "Delete", image: "trash")
+            /// Continue Button
+            Button {
+                if currentView == .actions {
+                    withAnimation(.bouncy) {
+                        currentView = .periods
+                    }
+                } else {
+                    print("Subscribe")
+                }
+            } label: {
+                Text(currentView == .actions ? "Continue" : "Subscribe")
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .foregroundStyle(.white)
+                    .background(.blue, in: .capsule)
+            }
+            .disabledWithOpacity(currentView == .actions ? selectedAction == nil : false)
+            .disabledWithOpacity(currentView == .periods ? selectedPeriod == nil : false)
+            .disabledWithOpacity(currentView == .keypad ? duration.isEmpty : false)
+            .padding(.top, 15)
         }
         .padding(20)
     }
     
+    /// View 1
     @ViewBuilder
-    private func CustomButton(title: String, image: String, action: @escaping () -> () = { }) -> some View {
-        Button(action: action) {
+    func View1() -> some View {
+        VStack(spacing: 12) {
             HStack {
-                Text(title)
-                    .font(.system(size: 13))
+                Text("Choose Subscription")
+                    .font(.title2)
+                    .fontWeight(.semibold)
                 
                 Spacer(minLength: 0)
                 
-                Image(systemName: image)
-                    .frame(width: 20)
+                Button {
+                    /// Dismissing Sheet
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .foregroundStyle(Color.gray, Color.primary.opacity(0.1))
+                }
             }
-            .frame(maxHeight: .infinity)
+            .padding(.bottom, 10)
+            
+            /// Custom Checkbox Menu
+            ForEach(actions) { action in
+                let isSelected: Bool = selectedAction?.id == action.id
+                
+                HStack(spacing: 10) {
+                    Image(systemName: action.image)
+                        .font(.title)
+                        .frame(width: 40)
+                    
+                    Text(action.title)
+                        .fontWeight(.semibold)
+                    
+                    Spacer(minLength: 0)
+                    
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle.fill")
+                        .font(.title)
+                        .contentTransition(.symbolEffect)
+                        .foregroundStyle(isSelected ? Color.blue : Color.gray.opacity(0.2))
+                }
+                .padding(.vertical, 6)
+                .contentShape(.rect)
+                .onTapGesture {
+                    withAnimation(.snappy) {
+                        selectedAction = isSelected ? nil : action
+                    }
+                }
+            }
+        }
+    }
+    
+    /// View 2
+    @ViewBuilder
+    func View2() -> some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Choose Period")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Spacer(minLength: 0)
+                
+                Button {
+                    withAnimation(.bouncy) {
+                        currentView = .actions
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .foregroundStyle(Color.gray, Color.primary.opacity(0.1))
+                }
+            }
+            .padding(.bottom, 25)
+            
+            Text("Choose the period you want\nto get subscribed.")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.gray)
+                .padding(.bottom, 20)
+            
+            /// Grid Box View
+            LazyVGrid(columns: Array(repeating: GridItem(), count: 3), spacing: 15) {
+                ForEach(periods) { period in
+                    let isSelected = selectedPeriod?.id == period.id
+                    
+                    VStack(spacing: 6) {
+                        Text(period.title)
+                            .font(period.value == 0 ? .title3 : .title2)
+                            .fontWeight(.semibold)
+                        
+                        if period.value != 0 {
+                            Text(period.value == 1 ? "Month" : "Months")
+                                .font(.caption)
+                                .foregroundStyle(.gray)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 80)
+                    .background {
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill((isSelected ? Color.blue : Color.gray).opacity(isSelected ? 0.2 : 0.1))
+                    }
+                    .contentShape(.rect)
+                    .onTapGesture {
+                        withAnimation(.snappy) {
+                            if period.value == 0 {
+                                /// Go To Custom Keypad View (View 3)
+                                currentView = .keypad
+                            } else {
+                                selectedPeriod = isSelected ? nil : period
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /// View 3
+    @ViewBuilder
+    func View3() -> some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Custom Duration")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Spacer(minLength: 0)
+                
+                Button {
+                    withAnimation(.bouncy) {
+                        currentView = .periods
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .foregroundStyle(Color.gray, Color.primary.opacity(0.1))
+                }
+            }
+            .padding(.bottom, 10)
+            
+            VStack(spacing: 6) {
+                Text(duration.isEmpty ? "0" : duration)
+                    .font(.system(size: 60, weight: .black))
+                    .contentTransition(.numericText())
+                
+                Text("Days")
+                    .font(.caption)
+                    .foregroundStyle(.gray)
+            }
+            .padding(.vertical, 20)
+            
+            /// Custom Keypad View
+            LazyVGrid(columns: Array(repeating: GridItem(), count: 3), spacing: 15) {
+                ForEach(keypadValues) { keyValue in
+                    if keyValue.value == 0 {
+                        Spacer()
+                    }
+                    
+                    Group {
+                        if keyValue.isBack {
+                            Image(systemName: keyValue.title)
+                        } else {
+                            Text(keyValue.title)
+                        }
+                    }
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .contentShape(.rect)
+                    .onTapGesture {
+                        withAnimation(.snappy) {
+                            if keyValue.isBack {
+                                if !duration.isEmpty {
+                                    duration.removeLast()
+                                }
+                            } else {
+                                duration.append(keyValue.title)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, -15)
         }
     }
 }
 
 #Preview {
     ContentView()
+}
+
+extension View {
+    func disabledWithOpacity(_ status: Bool) -> some View {
+        self
+            .disabled(status)
+            .opacity(status ? 0.5 : 1)
+    }
 }
