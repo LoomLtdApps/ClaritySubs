@@ -1,69 +1,122 @@
 //
 //  ContentView.swift
-//  OnBoarding
+//  MorphingFAB
 //
-//  Created by Balaji Venkatesh on 08/07/25.
+//  Created by Balaji Venkatesh on 24/06/25.
 //
 
 import SwiftUI
 
 struct ContentView: View {
-    //@AppStorage("showOnBoarding") private var showOnBoarding: Bool = true
-    @State private var showOnBoarding: Bool = true
+    @State private var showExpandedContent: Bool = false
+    @State private var selectedItem: String = "Expanded View"
+    @Environment(\.colorScheme) var colorScheme
     var body: some View {
         NavigationStack {
             List {
-                
-            }
-            .navigationTitle("Apple Games")
-        }
-        .sheet(isPresented: $showOnBoarding) {
-            AppleOnBoardingView(tint: .red, title: "Welcome to Apple Games") {
-                /// YOUR APP ICON HERE
-                Image(systemName: "gamecontroller.fill")
-                    .font(.system(size: 50))
-                    .frame(width: 100, height: 100)
-                    .foregroundStyle(.white)
-                    .background(.red.gradient, in: .rect(cornerRadius: 25))
-                    .frame(height: 180)
-            } cards: {
-                /// Cards
-                AppleOnBoardingCard(
-                    symbol: "list.bullet",
-                    title: "See What's New, Just for you",
-                    subTitle: "Explore whats's happening in your games and what to play next."
-                )
-                
-                AppleOnBoardingCard(
-                    symbol: "person.2",
-                    title: "Play and Compete with Friends",
-                    subTitle: "Challenge friends, see what they're playing, and play together."
-                )
-                
-                AppleOnBoardingCard(
-                    symbol: "square.stack",
-                    title: "All Your Games in One Place",
-                    subTitle: "Access your full game library from the App Store and Apple Arcade."
-                )
-            } footer: {
-                /// YOUR FOOTER HERE
-                VStack(alignment: .leading, spacing: 6) {
-                    Image(systemName: "person.3.fill")
-                        .foregroundStyle(.red)
-                    
-                    Text("Your gameplay information, including what you play and your game activity, is used to improve Game Center.")
-                        .font(.caption2)
-                        .foregroundStyle(.gray)
+                Section("Usage") {
+                    Text(
+                        """
+                        **MorphingButton {**
+                           // Label
+                        **} content: {**
+                           // Menu
+                        **} expandedContent: {**
+                           // Full-Screen
+                        **}**
+                        """
+                    )
+                    .monospaced()
+                    .lineSpacing(5)
+                    .padding(.leading, 15)
                 }
-                .padding(.vertical, 15)
-            } onContinue: {
-                //print("Close Sheet!")
-                showOnBoarding = false
             }
+            .navigationTitle("Morphing Button")
+        }
+        .overlay(alignment: .bottomTrailing) {
+            MorphingButton(backgroundColor: colorScheme.oppositeColor, showExpandedContent: $showExpandedContent) {
+                Image(systemName: "plus")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.background)
+                    .frame(width: 45, height: 45)
+            } content: {
+                VStack(alignment: .leading, spacing: 12) {
+                    RowView("paperplane", "Send")
+                    RowView("arrow.trianglehead.2.counterclockwise", "Swap")
+                    RowView("arrow.down", "Receive")
+                }
+                .padding(.horizontal, 5)
+                .padding(.vertical, 10)
+            } expandedContent: {
+                /// Your Expanded Content View
+                VStack {
+                    HStack {
+                        Text(selectedItem)
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Spacer(minLength: 0)
+                        
+                        Button {
+                            showExpandedContent = false
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title)
+                        }
+                    }
+                    .padding(.leading, 10)
+                    
+                    Spacer()
+                }
+                .foregroundStyle(.background)
+                .padding(15)
+            }
+            .padding(15)
+        }
+    }
+    
+    /// Dummy Menu Row Content
+    @ViewBuilder
+    func RowView(_ image: String, _ title: String) -> some View {
+        HStack(spacing: 18) {
+            Image(systemName: image)
+                .font(.title2)
+                .frame(width: 45, height: 45)
+                .background(.background, in: .circle)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.title3)
+                    .foregroundStyle(.background)
+                    .fontWeight(.semibold)
+                
+                Text("This is a sample text for description")
+                    .font(.callout)
+                    .foregroundStyle(.gray)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(10)
+        .contentShape(.rect)
+        .onTapGesture {
+            selectedItem = title
+            showExpandedContent.toggle()
         }
     }
 }
 
 #Preview {
     ContentView()
+}
+
+extension ColorScheme {
+    var color: Color {
+        self == .dark ? Color.black : Color.white
+    }
+    
+    var oppositeColor: Color {
+        self != .dark ? Color.black : Color.white
+    }
 }
