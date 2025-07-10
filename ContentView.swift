@@ -1,175 +1,54 @@
 //
 //  ContentView.swift
-//  Skeleton
+//  AlertDrawer
 //
-//  Created by Balaji Venkatesh on 12/04/25.
+//  Created by Balaji Venkatesh on 30/03/25.
 //
 
 import SwiftUI
 
 struct ContentView: View {
-    @State private var card: Card?
+    @State private var config: DrawerConfig = .init()
+    @State private var moveToCenter: Bool = false
     var body: some View {
         NavigationStack {
             VStack(spacing: 15) {
-                SomeCardView(card: card)
-                SomeContactCard()
-                Spacer()
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity)
-            .background(.ultraThinMaterial)
-            .navigationTitle("Skeleton Effect")
-            .toolbar {
-                ToolbarItem {
-                    Button("Tap", systemImage: "arrow.trianglehead.2.counterclockwise", action: toggleCard)
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder
-    func SomeContactCard() -> some View {
-        let isLoading = card == nil
-        
-        VStack(alignment: .leading, spacing: 15) {
-             HStack(spacing: 12) {
-                 Group {
-                     if isLoading {
-                         SkeletonView(.circle)
-                     } else {
-                         Circle()
-                             .fill(.indigo.gradient)
-                             .overlay {
-                                 Text("K")
-                                     .font(.title.bold())
-                                     .foregroundStyle(.white)
-                             }
-                     }
-                 }
-                 .frame(width: 60, height: 60)
-                 
-                 VStack(alignment: .leading, spacing: 6) {
-                     ZStack {
-                         if isLoading {
-                             SkeletonView(.rect(cornerRadius: 5))
-                                 .frame(height: 15)
-                         } else {
-                             Text("Kavsoft")
-                                 .font(.title3.bold())
-                         }
-                     }
-                     
-                     ZStack {
-                         if isLoading {
-                             SkeletonView(.rect(cornerRadius: 5))
-                                 .frame(height: 15)
-                         } else {
-                             Text("Hello </> from SwiftUI!")
-                                 .font(.callout)
-                                 .foregroundStyle(.gray)
-                         }
-                     }
-                     .padding(.trailing, 50)
-                 }
-                 .frame(maxWidth: .infinity, alignment: .leading)
-             }
-         }
-         .padding(15)
-         .background(.background)
-         .clipShape(.rect(cornerRadius: 15))
-         .shadow(color: .black.opacity(0.1), radius: 15)
-    }
-    
-    func toggleCard() {
-        withAnimation(.smooth) {
-            if card == nil {
-                card = .mock
-            } else {
-                card = nil
-            }
-        }
-    }
-}
-
-struct Card: Identifiable {
-    var id: String = UUID().uuidString
-    var image: String
-    var title: String
-    var subTitle: String
-    var description: String
-    
-    static var mock: Card {
-        .init(
-            image: "WWDC 25",
-            title: "World Wide Developer Conference 2025",
-            subTitle: "From June 9th 2025",
-            description: "Be there for the reveal of the latest Apple tools, frameworks, and features. Learn to elevate your apps and games through video sessions hosted by Apple engineers and designers."
-        )
-    }
-    
-    static var cardData: Card {
-        .mock
-    }
-}
-
-struct SomeCardView: View {
-    var card: Card?
-    var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Rectangle()
-                .foregroundStyle(.clear)
-                .overlay {
-                    if let card {
-                        Image(card.image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } else {
-                        SkeletonView(.rect)
-                    }
-                }
-                .frame(height: 220)
-                .clipped()
-            
-            VStack(alignment: .leading, spacing: 10) {
-                if let card {
-                    Text(card.title)
-                        .fontWeight(.semibold)
-                } else {
-                    SkeletonView(.rect(cornerRadius: 5))
-                        .frame(height: 20)
+                Toggle("Move to Center", isOn: $moveToCenter)
+                    .padding(15)
+                    .background(.bar, in: .rect(cornerRadius: 10))
+                
+                if !moveToCenter {
+                    Spacer()
                 }
                 
-                Group {
-                    if let card {
-                        Text(card.subTitle)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        SkeletonView(.rect(cornerRadius: 5))
-                            .frame(height: 15)
-                    }
-                }
-                .padding(.trailing, 30)
-                
-                ZStack {
-                    if let card {
-                        Text(card.description)
-                            .font(.caption)
-                            .foregroundStyle(.gray)
-                    } else {
-                        SkeletonView(.rect(cornerRadius: 5))
-                    }
-                }
-                .frame(height: 50)
-                .lineLimit(3)
+                DrawerButton(title: "Continue", config: $config)
             }
-            .padding([.horizontal, .top], 15)
-            .padding(.bottom, 25)
+            .padding(15)
+            .navigationTitle("Alert Drawer")
+            .animation(.snappy(duration: 0.25, extraBounce: 0), value: moveToCenter)
         }
-        .background(.background)
-        .clipShape(.rect(cornerRadius: 15))
-        .shadow(color: .black.opacity(0.1), radius: 10)
+        /// Place this on top of the root view
+        .alertDrawer(config: $config, primaryTitle: "Continue", secondaryTitle: "Cancel") {
+            return false
+        } onSecondaryClick: {
+            return true
+        } content: {
+            /// Dummy Content
+            VStack(alignment: .leading, spacing: 15) {
+                Image(systemName: "exclamationmark.circle")
+                    .font(.largeTitle)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Text("Are you sure?")
+                    .font(.title2.bold())
+                
+                Text("You haven't backed up your wallet yet.\nIf you remove it, you could lose access forever. We suggest tapping Cancel and backing up your wallet first with a valid recovery method.")
+                    .foregroundStyle(.gray)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 300)
+            }
+        }
     }
 }
 
