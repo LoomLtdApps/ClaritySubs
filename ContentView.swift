@@ -1,122 +1,178 @@
 //
 //  ContentView.swift
-//  MorphingFAB
+//  Skeleton
 //
-//  Created by Balaji Venkatesh on 24/06/25.
+//  Created by Balaji Venkatesh on 12/04/25.
 //
 
 import SwiftUI
 
 struct ContentView: View {
-    @State private var showExpandedContent: Bool = false
-    @State private var selectedItem: String = "Expanded View"
-    @Environment(\.colorScheme) var colorScheme
+    @State private var card: Card?
     var body: some View {
         NavigationStack {
-            List {
-                Section("Usage") {
-                    Text(
-                        """
-                        **MorphingButton {**
-                           // Label
-                        **} content: {**
-                           // Menu
-                        **} expandedContent: {**
-                           // Full-Screen
-                        **}**
-                        """
-                    )
-                    .monospaced()
-                    .lineSpacing(5)
-                    .padding(.leading, 15)
+            VStack(spacing: 15) {
+                SomeCardView(card: card)
+                SomeContactCard()
+                Spacer()
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity)
+            .background(.ultraThinMaterial)
+            .navigationTitle("Skeleton Effect")
+            .toolbar {
+                ToolbarItem {
+                    Button("Tap", systemImage: "arrow.trianglehead.2.counterclockwise", action: toggleCard)
                 }
             }
-            .navigationTitle("Morphing Button")
-        }
-        .overlay(alignment: .bottomTrailing) {
-            MorphingButton(backgroundColor: colorScheme.oppositeColor, showExpandedContent: $showExpandedContent) {
-                Image(systemName: "plus")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.background)
-                    .frame(width: 45, height: 45)
-            } content: {
-                VStack(alignment: .leading, spacing: 12) {
-                    RowView("paperplane", "Send")
-                    RowView("arrow.trianglehead.2.counterclockwise", "Swap")
-                    RowView("arrow.down", "Receive")
-                }
-                .padding(.horizontal, 5)
-                .padding(.vertical, 10)
-            } expandedContent: {
-                /// Your Expanded Content View
-                VStack {
-                    HStack {
-                        Text(selectedItem)
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
-                        Spacer(minLength: 0)
-                        
-                        Button {
-                            showExpandedContent = false
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title)
-                        }
-                    }
-                    .padding(.leading, 10)
-                    
-                    Spacer()
-                }
-                .foregroundStyle(.background)
-                .padding(15)
-            }
-            .padding(15)
         }
     }
     
-    /// Dummy Menu Row Content
     @ViewBuilder
-    func RowView(_ image: String, _ title: String) -> some View {
-        HStack(spacing: 18) {
-            Image(systemName: image)
-                .font(.title2)
-                .frame(width: 45, height: 45)
-                .background(.background, in: .circle)
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title)
-                    .font(.title3)
-                    .foregroundStyle(.background)
-                    .fontWeight(.semibold)
-                
-                Text("This is a sample text for description")
-                    .font(.callout)
-                    .foregroundStyle(.gray)
-                    .lineLimit(2)
+    func SomeContactCard() -> some View {
+        let isLoading = card == nil
+        
+        VStack(alignment: .leading, spacing: 15) {
+             HStack(spacing: 12) {
+                 Group {
+                     if isLoading {
+                         SkeletonView(.circle)
+                     } else {
+                         Circle()
+                             .fill(.indigo.gradient)
+                             .overlay {
+                                 Text("K")
+                                     .font(.title.bold())
+                                     .foregroundStyle(.white)
+                             }
+                     }
+                 }
+                 .frame(width: 60, height: 60)
+                 
+                 VStack(alignment: .leading, spacing: 6) {
+                     ZStack {
+                         if isLoading {
+                             SkeletonView(.rect(cornerRadius: 5))
+                                 .frame(height: 15)
+                         } else {
+                             Text("Kavsoft")
+                                 .font(.title3.bold())
+                         }
+                     }
+                     
+                     ZStack {
+                         if isLoading {
+                             SkeletonView(.rect(cornerRadius: 5))
+                                 .frame(height: 15)
+                         } else {
+                             Text("Hello </> from SwiftUI!")
+                                 .font(.callout)
+                                 .foregroundStyle(.gray)
+                         }
+                     }
+                     .padding(.trailing, 50)
+                 }
+                 .frame(maxWidth: .infinity, alignment: .leading)
+             }
+         }
+         .padding(15)
+         .background(.background)
+         .clipShape(.rect(cornerRadius: 15))
+         .shadow(color: .black.opacity(0.1), radius: 15)
+    }
+    
+    func toggleCard() {
+        withAnimation(.smooth) {
+            if card == nil {
+                card = .mock
+            } else {
+                card = nil
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(10)
-        .contentShape(.rect)
-        .onTapGesture {
-            selectedItem = title
-            showExpandedContent.toggle()
+    }
+}
+
+struct Card: Identifiable {
+    var id: String = UUID().uuidString
+    var image: String
+    var title: String
+    var subTitle: String
+    var description: String
+    
+    static var mock: Card {
+        .init(
+            image: "WWDC 25",
+            title: "World Wide Developer Conference 2025",
+            subTitle: "From June 9th 2025",
+            description: "Be there for the reveal of the latest Apple tools, frameworks, and features. Learn to elevate your apps and games through video sessions hosted by Apple engineers and designers."
+        )
+    }
+    
+    static var cardData: Card {
+        .mock
+    }
+}
+
+struct SomeCardView: View {
+    var card: Card?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Rectangle()
+                .foregroundStyle(.clear)
+                .overlay {
+                    if let card {
+                        Image(card.image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        SkeletonView(.rect)
+                    }
+                }
+                .frame(height: 220)
+                .clipped()
+            
+            VStack(alignment: .leading, spacing: 10) {
+                if let card {
+                    Text(card.title)
+                        .fontWeight(.semibold)
+                } else {
+                    SkeletonView(.rect(cornerRadius: 5))
+                        .frame(height: 20)
+                }
+                
+                Group {
+                    if let card {
+                        Text(card.subTitle)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        SkeletonView(.rect(cornerRadius: 5))
+                            .frame(height: 15)
+                    }
+                }
+                .padding(.trailing, 30)
+                
+                ZStack {
+                    if let card {
+                        Text(card.description)
+                            .font(.caption)
+                            .foregroundStyle(.gray)
+                    } else {
+                        SkeletonView(.rect(cornerRadius: 5))
+                    }
+                }
+                .frame(height: 50)
+                .lineLimit(3)
+            }
+            .padding([.horizontal, .top], 15)
+            .padding(.bottom, 25)
         }
+        .background(.background)
+        .clipShape(.rect(cornerRadius: 15))
+        .shadow(color: .black.opacity(0.1), radius: 10)
     }
 }
 
 #Preview {
     ContentView()
-}
-
-extension ColorScheme {
-    var color: Color {
-        self == .dark ? Color.black : Color.white
-    }
-    
-    var oppositeColor: Color {
-        self != .dark ? Color.black : Color.white
-    }
 }
